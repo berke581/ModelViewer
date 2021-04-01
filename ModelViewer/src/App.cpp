@@ -154,7 +154,7 @@ int main(void) {
 
 	va.unBind();
 
-	Shader basic(R"(src\shaders\Basic.vert)", R"(src\shaders/Basic.frag)");
+	Shader basic(R"(src\shaders/basic.glsl)");
 
 	glEnable(GL_DEPTH_TEST);
 
@@ -206,13 +206,15 @@ int main(void) {
 		va.bind();
 		// use program here
 		basic.bind();
-		basic.set("Color", boxColor.x, boxColor.y, boxColor.z, boxColor.w);
-		basic.set("model", model);
-		basic.set("projection", proj);
-		basic.set("view", view);
+		basic.setUniform("Color", boxColor.x, boxColor.y, boxColor.z, boxColor.w);
+		basic.setUniform("model", model);
+		basic.setUniform("projection", proj);
+		basic.setUniform("view", view);
 		brickTexture.bind();
 		
 		glDrawArrays(GL_TRIANGLES, 0, 36);
+		basic.unBind();
+		brickTexture.unBind();
 		va.unBind();
 
 		// Rendering

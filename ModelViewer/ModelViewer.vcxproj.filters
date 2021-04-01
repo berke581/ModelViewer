@@ -51,6 +51,9 @@
     <ClCompile Include="src\VertexArray.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\Shader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\vendor\glm\detail\_features.hpp">
@@ -1348,9 +1351,8 @@
     <None Include="src\vendor\glm\gtx\wrap.inl">
       <Filter>Header Files</Filter>
     </None>
-    <None Include="src\shaders\Basic.frag" />
-    <None Include="src\shaders\Basic.vert" />
     <None Include="src\shaders\skybox.vert" />
     <None Include="src\shaders\skybox.frag" />
+    <None Include="src\shaders\basic.glsl" />
   </ItemGroup>
 </Project>
