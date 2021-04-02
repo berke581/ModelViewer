@@ -16,8 +16,8 @@
 #include "VertexArray.h"
 #include "VertexBuffer.h"
 #include "Texture.h"
-
 #include "Shader.h"
+#include "Camera.h"
 
 #include "assimp/BaseImporter.h"
 
@@ -25,22 +25,18 @@
 #define WIDTH 800
 #define HEIGHT 600
 
-glm::vec3 cameraPos   = glm::vec3(0.0f, 0.0f,  3.0f);
-glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
-glm::vec3 cameraUp    = glm::vec3(0.0f, 1.0f,  0.0f);
-
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
+Camera camera(glm::vec3(0.0f, 0.0f, 3.0f));
 bool firstMouse = true;
-float yaw = -90.0f;
-float pitch = 0.0f;
 float lastX = WIDTH / 2;
 float lastY = HEIGHT / 2;
 
 void processInput(GLFWwindow* window);
 void framebufferSizeCallback(GLFWwindow* window, int width, int height);
-void mouseCallback(GLFWwindow* window, double xpos, double ypos);
+void mouseCallback(GLFWwindow* window, double xPos, double yPos);
+void mouseScrollCallback(GLFWwindow* window, double xOffset, double yOffset);
 void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 
 
@@ -51,6 +47,7 @@ void init(GLFWwindow* window) {
 	glfwSetFramebufferSizeCallback(window, framebufferSizeCallback);
 	glfwSetCursorPosCallback(window, mouseCallback);
 	glfwSetMouseButtonCallback(window, mouseButtonCallback);
+	glfwSetScrollCallback(window, mouseScrollCallback);
 }
 
 int main(void) {
@@ -162,8 +159,6 @@ int main(void) {
 	float scale = 1.0f;
 	glm::vec3 rotation(0.0f, 0.0f, 0.0f);
 
-	glm::mat4 proj = glm::mat4(1.0f);
-	proj = glm::perspective(glm::radians(45.0f), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
 
 	while (!glfwWindowShouldClose(window))
 	{
@@ -197,18 +192,16 @@ int main(void) {
 			ImGui::End();
 		}
 
-		/*const float radius = 10.0f;
-		float camX = sin(glfwGetTime()) * radius;
-		float camZ = cos(glfwGetTime()) * radius;*/
-		glm::mat4 view;
-		view = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
+
+		glm::mat4 projection = glm::perspective(glm::radians(camera.getZoom()), (float)WIDTH / (float)HEIGHT, 0.1f, 100.0f);
+		glm::mat4 view = camera.getViewMatrix();
 		
 		va.bind();
 		// use program here
 		basic.bind();
 		basic.setUniform("Color", boxColor.x, boxColor.y, boxColor.z, boxColor.w);
 		basic.setUniform("model", model);
-		basic.setUniform("projection", proj);
+		basic.setUniform("projection", projection);
 		basic.setUniform("view", view);
 		brickTexture.bind();
 		
@@ -238,54 +231,43 @@ int main(void) {
 
 void processInput(GLFWwindow* window) {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL); // Regain control over cursor
+		glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL); // regain control over cursor
 
-	const float cameraSpeed = 2.5f * deltaTime; // adjust accordingly
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		cameraPos += cameraSpeed * cameraFront;
+		camera.processKeyboard(CameraMovement::FORWARD, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		cameraPos -= cameraSpeed * cameraFront;
+		camera.processKeyboard(CameraMovement::BACKWARD, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		cameraPos -= glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+		camera.processKeyboard(CameraMovement::LEFT, deltaTime);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		cameraPos += glm::normalize(glm::cross(cameraFront, cameraUp)) * cameraSpeed;
+		camera.processKeyboard(CameraMovement::RIGHT, deltaTime);
 }
 
 void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
 	glViewport(0, 0, width, height);
 }
 
-void mouseCallback(GLFWwindow* window, double xpos, double ypos)
+void mouseCallback(GLFWwindow* window, double xPos, double yPos)
 {
 	if (firstMouse)
 	{
-		lastX = xpos;
-		lastY = ypos;
+		lastX = xPos;
+		lastY = yPos;
 		firstMouse = false;
 	}
 
-	float xoffset = xpos - lastX;
-	float yoffset = lastY - ypos;
-	lastX = xpos;
-	lastY = ypos;
+	float xOffset = xPos - lastX;
+	float yOffset = lastY - yPos;
 
-	float sensitivity = 0.1f;
-	xoffset *= sensitivity;
-	yoffset *= sensitivity;
+	lastX = xPos;
+	lastY = yPos;
 
-	yaw += xoffset;
-	pitch += yoffset;
+	camera.processMouseMovement(xOffset, yOffset);
+}
 
-	if (pitch > 89.0f)
-		pitch = 89.0f;
-	if (pitch < -89.0f)
-		pitch = -89.0f;
-
-	glm::vec3 direction;
-	direction.x = cos(glm::radians(yaw)) * cos(glm::radians(pitch));
-	direction.y = sin(glm::radians(pitch));
-	direction.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
-	cameraFront = glm::normalize(direction);
+void mouseScrollCallback(GLFWwindow* window, double xOffset, double yOffset)
+{
+	camera.processMouseScroll(yOffset);
 }
 
 void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
